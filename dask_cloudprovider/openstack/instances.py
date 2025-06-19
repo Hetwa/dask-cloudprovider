@@ -193,8 +193,8 @@ class OpenStackInstance(VMInterface):
 class OpenStackScheduler(SchedulerMixin, OpenStackInstance):
     """Scheduler running on an OpenStack Instance."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, scheduler_size:str=None,*args, **kwargs):
+        super().__init__(size=scheduler_size,*args, **kwargs)
 
     async def start(self):
         await self.start_scheduler()
@@ -236,11 +236,13 @@ class OpenStackWorker(WorkerMixin, OpenStackInstance):
         worker_module: str = None,
         worker_class: str = None,
         worker_options: dict = {},
+        worker_size: str = None,
         **kwargs,
     ):
         super().__init__(
             scheduler=scheduler,
             *args,
+            size=worker_size,
             worker_module=worker_module,
             worker_class=worker_class,
             worker_options=worker_options,
@@ -391,7 +393,8 @@ class OpenStackCluster(VMCluster):
     def __init__(
         self,
         region: str = None,
-        size: str = None,
+        worker_size: str = None,
+        scheduler_size: str = None,
         image: str = None,
         docker_image: str = None,
         debug: bool = False,
@@ -413,7 +416,8 @@ class OpenStackCluster(VMCluster):
             "cluster": self,
             "config": self.config,
             "region": region if region is not None else self.config.get("region"),
-            "size": size if size is not None else self.config.get("size"),
+            "worker_size": worker_size if worker_size is not None else self.config.get("worker_size"),
+            "scheduler_size": scheduler_size if scheduler_size is not None else self.config.get("scheduler_size"),
             "image": image if image is not None else self.config.get("image"),
             "docker_image": docker_image or self.config.get("docker_image"),
             "worker_command": self.worker_command,
