@@ -157,13 +157,20 @@ class OpenStackInstance(VMInterface):
             "create_floating_ip", False
         ):  # Checks if floating IPs were configured to be created
             try:
-                # Retrieve all floating IPs associated with the instance
-                floating_ips = conn.network.ips(port_id=self.instance.id)
-                for ip in floating_ips:
-                    # Disassociate and delete the floating IP
-                    conn.network.update_ip(ip, port_id=None)
-                    conn.network.delete_ip(ip.id)
-                    self.cluster._log(f"Deleted floating IP {ip.floating_ip_address}")
+                # Find the first port of the instance
+                ports = await self.call_async(
+                    conn.network.ports,
+                    device_id=self.instance.id
+                )
+                ports = list(ports)
+                if ports:    
+                    # Retrieve all floating IPs associated with the instance
+                    floating_ips = conn.network.ips(port_id=ports[0].id)
+                    for ip in floating_ips:
+                        # Disassociate and delete the floating IP
+                        conn.network.update_ip(ip, port_id=None)
+                        conn.network.delete_ip(ip.id)
+                        self.cluster._log(f"Deleted floating IP {ip.floating_ip_address}")
             except Exception as e:
                 self.cluster._log(
                     f"Failed to clean up floating IPs for instance {self.name}: {str(e)}"
